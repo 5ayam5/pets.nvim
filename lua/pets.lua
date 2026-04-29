@@ -20,6 +20,7 @@ M.pets = {}
 
 function M.setup(options)
     options = options or {}
+    vim.notify("Setting up pets with options: " .. vim.inspect(options), vim.log.levels.DEBUG)
     M.options = vim.tbl_deep_extend("force", M.options, options)
 
     -- popup opts
@@ -45,12 +46,6 @@ function M.setup(options)
         popup_opts.win_options = { winhighlight = hl }
     end
     M.options.popup = popup_opts
-
-    -- init hologram
-    local ok = pcall(require, "hologram")
-    if ok then
-        require("hologram").setup({ auto_display = false })
-    end
 
     require("pets.commands") -- init autocommands
 end

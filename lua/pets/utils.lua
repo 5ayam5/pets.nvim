@@ -11,7 +11,9 @@ M.default_pet_table = {
 function M.listdir(path)
     local sol = {}
     for val in vim.fs.dir(path) do
-        table.insert(sol, val)
+        if val:sub(1, 1) ~= "." then
+            table.insert(sol, val)
+        end
     end
     return sol
 end
