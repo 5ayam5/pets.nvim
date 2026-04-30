@@ -106,10 +106,11 @@ function M.Animation:next_frame()
 
     local row_offset = self.row - 1  -- row=1 means bottom, higher = further up
     local total = #self.frames[self.current_action]
+    local jump_h = math.max(1, math.floor(self.scale / 2))
     if self.current_action == "jump" then
-        row_offset = row_offset + math.floor((self.frame_counter - 1) / total * 3)
+        row_offset = row_offset + math.floor((self.frame_counter - 1) / total * jump_h)
     elseif self.current_action == "fall" then
-        row_offset = row_offset + math.floor((1 - (self.frame_counter - 1) / total) * 3)
+        row_offset = row_offset + math.floor((1 - (self.frame_counter - 1) / total) * jump_h)
     end
 
     kitty.show(image, self.popup.winid, self.col, row_offset, self.scale, self.avoid_statusline)

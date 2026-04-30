@@ -64,9 +64,9 @@ local function upload(path, img_id)
     return true
 end
 
-local function display(img_id, row, col, h)
+local function display(img_id, row, col, h, w)
     write("\27[s\27[" .. row .. ";" .. (col + 1) .. "H")
-    apc({ a = "p", i = img_id, p = 1, C = 1, r = h, q = 2 })
+    apc({ a = "p", i = img_id, p = 1, C = 1, c = w, r = h, q = 2 })
     write("\27[u")
 end
 
@@ -85,25 +85,40 @@ local function png_dims(path)
     return w, h
 end
 
+local cell_size = nil
+local function get_cell_size()
+    if cell_size then return cell_size end
+    local ok, ffi = pcall(require, "ffi")
+    if ok then
+        pcall(function()
+            ffi.cdef([[typedef struct { unsigned short row,col,xpixel,ypixel; } winsize; int ioctl(int,int,...);]])
+            local TIOCGWINSZ = jit.os == "OSX" and 0x40087468 or 0x5413
+            local sz = ffi.new("winsize")
+            if ffi.C.ioctl(1, TIOCGWINSZ, sz) == 0 and sz.col > 0 then
+                cell_size = { w = sz.xpixel / sz.col, h = sz.ypixel / sz.row }
+            end
+        end)
+    end
+    cell_size = cell_size or { w = 9, h = 18 }
+    return cell_size
+end
+
 function M.show(path, win, col, row_offset, scale, avoid_statusline)
-    if not path then
-        return
-    end
+    if not path then return end
     local h = scale or 4
-    local img_id = next_img_id
-    next_img_id = next_img_id + 1
-    if not upload(path, img_id) then
-        return
-    end
+    local img_id = next_img_id; next_img_id = next_img_id + 1
+    if not upload(path, img_id) then return end
     local s = win_state[win]
-    if s then
-        apc({ a = "d", d = "i", i = s.img_id, q = 2 })
-    end
+    if s then apc({ a = "d", d = "i", i = s.img_id, q = 2 }) end
     win_state[win] = { img_id = img_id }
     local pos = vim.api.nvim_win_get_position(win)
     local bottom = vim.o.lines - (avoid_statusline and 2 or 1)
     local row = bottom - h + 1 - (row_offset or 0)
-    display(img_id, row, pos[2] + col, h)
+    -- compute cell width from PNG aspect ratio and terminal cell pixel size
+    local pw, ph = png_dims(path)
+    local cs = get_cell_size()
+    local w = pw and math.max(1, math.ceil(h * (pw / ph) * (cs.h / cs.w))) or h * 2
+    display(img_id, row, pos[2] + col, h, w)
 end
 
 function M.clear(win)
@@ -123,7 +138,8 @@ end
 function M.image_size(path, scale)
     local h = scale or 4
     local pw, ph = png_dims(path)
-    local w = pw and math.max(1, math.ceil(h * pw / ph * 2)) or h * 2
+    local cs = get_cell_size()
+    local w = pw and math.max(1, math.ceil(h * (pw / ph) * (cs.h / cs.w))) or h * 2
     return { width = w, height = h }
 end
 
