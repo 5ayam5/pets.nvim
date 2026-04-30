@@ -16,7 +16,8 @@ function M.Animation.new(sourcedir, type, style, popup, user_opts, state)
     instance.popup = popup
     instance.state = state
     instance.speed_multiplier = user_opts.speed_multiplier
-    instance.scale = user_opts.scale or 4
+    instance.scale = user_opts.scale
+    instance.avoid_statusline = user_opts.popup.avoid_statusline
 
     for _, action in pairs(instance.actions) do
         local current_frames = {}
@@ -103,15 +104,15 @@ function M.Animation:next_frame()
     self.col = math.min(self.col, max_col)
     M.Animation.set_next_col(self)
 
-    local row_offset = 0
+    local row_offset = self.row - 1  -- row=1 means bottom, higher = further up
     local total = #self.frames[self.current_action]
     if self.current_action == "jump" then
-        row_offset = math.floor((self.frame_counter - 1) / total * 3)
+        row_offset = row_offset + math.floor((self.frame_counter - 1) / total * 3)
     elseif self.current_action == "fall" then
-        row_offset = math.floor((1 - (self.frame_counter - 1) / total) * 3)
+        row_offset = row_offset + math.floor((1 - (self.frame_counter - 1) / total) * 3)
     end
 
-    kitty.show(image, self.popup.winid, self.col, row_offset, self.scale)
+    kitty.show(image, self.popup.winid, self.col, row_offset, self.scale, self.avoid_statusline)
     self.current_image = image
     self.frame_counter = self.frame_counter + 1
 end

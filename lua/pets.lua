@@ -25,26 +25,14 @@ function M.setup(options)
 
     -- popup opts
     local popup_opts = {
-        position = {
-            row = "100%",
-            col = "100%",
-        },
+        position = { row = "100%", col = "100%" },
         relative = "editor",
-        size = {
-            width = M.options.popup.width,
-            height = 10,
-        },
+        size = { width = M.options.popup.width, height = 10 },
         focusable = false,
         enter = false,
-        win_options = {
-            winblend = M.options.popup.winblend,
-        },
+        win_options = { winblend = 100 },
+        avoid_statusline = M.options.popup.avoid_statusline,
     }
-    if M.options.popup.avoid_statusline then
-        local hl = utils.parse_popup_hl(M.options.popup.hl)
-        popup_opts.position.row = "99%"
-        popup_opts.win_options = { winhighlight = hl }
-    end
     M.options.popup = popup_opts
 
     require("pets.commands") -- init autocommands
