@@ -9,6 +9,7 @@ M.options = {
     row = 1, -- the row (height) to display the pet at
     col = 0, -- the column to display the pet at (set to high numeber to have it stay stil at the right)
     speed_multiplier = 1,
+    scale = 4, -- height in neovim rows; width scales proportionally
     default_pet = "dog",
     default_style = "brown",
     random = true,
@@ -20,7 +21,6 @@ M.pets = {}
 
 function M.setup(options)
     options = options or {}
-    vim.notify("Setting up pets with options: " .. vim.inspect(options), vim.log.levels.DEBUG)
     M.options = vim.tbl_deep_extend("force", M.options, options)
 
     -- popup opts

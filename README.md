@@ -1,7 +1,7 @@
 # pets.nvim
 
 Pets.nvim is a plugin that provides the missing core functionality of showing little animal friends inside your editor.
-It relies on the [kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/) and [hologram.nvim](https://github.com/edluffy/hologram.nvim) to be able to display images in a terminal window.
+It uses the [kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/) directly to display images in a terminal window.
 As you might know the plugin is heavily inspired by [vscode-pets](https://github.com/tonybaloney/vscode-pets/tree/master/media).
 If you like the art for the pets, check out the [Credits](#-Credits) section.
 
@@ -11,10 +11,8 @@ If you like the art for the pets, check out the [Credits](#-Credits) section.
 
 ## ⚠️ Limitations
 
-This plugin relies on [hologram.nvim](https://github.com/edluffy/hologram.nvim) to display the images,
-and shares all of its limitations. Here are the most significant ones:
-- Only works with terminal emulators that support the [kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
-    To be more precise the only terminal I tested where I was able to have the protocol working correctly is kitty itself.
+This plugin uses the kitty graphics protocol directly. Here are the most significant limitations:
+- Only works with [kitty](https://sw.kovidgoyal.net/kitty/) terminal emulator
 - Doesn't currently work inside tmux
 
 ## 📦 Installation
@@ -26,18 +24,15 @@ Examples:
 With packer:
 ```lua
 use({
-  "giusgad/pets.nvim",
-  requires = {
-    "giusgad/hologram.nvim",
-    "MunifTanjim/nui.nvim",
-  }
+  "5ayam5/pets.nvim",
+  requires = { "MunifTanjim/nui.nvim" }
 })
 ```
 With lazy:
 ```lua
 {
-  "giusgad/pets.nvim",
-  dependencies = { "MunifTanjim/nui.nvim", "giusgad/hologram.nvim" },
+  "5ayam5/pets.nvim",
+  dependencies = { "MunifTanjim/nui.nvim" },
 }
 ```
 And then call 
@@ -46,8 +41,6 @@ require("pets").setup({
   -- your options here
 })
 ```
->Note: if you want to use the original `hologram.nvim` instead of my fork,replace `giusgad/hologram.nvim` with `edluffy/hologram.nvim`.
->My fork for now only fixes errors with hologram `auto_display = true`, and the plugin should not have any other issues with the original.
 
 ## ⚙️ Configuration
 
@@ -57,16 +50,16 @@ This is the default configuration:
   row = 1, -- the row (height) to display the pet at (higher row means the pet is lower on the screen), must be 1<=row<=10
   col = 0, -- the column to display the pet at (set to high number to have it stay still on the right side)
   speed_multiplier = 1, -- you can make your pet move faster/slower. If slower the animation will have lower fps.
+  scale = 4, -- height of the pet in terminal rows; width scales proportionally
   default_pet = "dog", -- the pet to use for the PetNew command
   default_style = "brown", -- the style of the pet to use for the PetNew command
   random = true, -- whether to use a random pet for the PetNew command, overrides default_pet and default_style
   death_animation = true, -- animate the pet's death, set to false to feel less guilt -- currently no animations are available
   popup = { -- popup options, try changing these if you see a rectangle around the pets
     width = "30%", -- can be a string with percentage like "45%" or a number of columns like 45
-    winblend = 100, -- winblend value - see :h 'winblend' - only used if avoid_statusline is false
-    hl = { Normal = "Normal" }, -- hl is only set if avoid_statusline is true, you can put any hl group instead of "Normal"
-    avoid_statusline = false, -- if winblend is 100 then the popup is invisible and covers the statusline, if that
-    -- doesn't work for you then set this to true and the popup will use hl and will be spawned above the statusline (hopefully)
+    winblend = 100, -- winblend value - see :h 'winblend'
+    hl = { Normal = "Normal" }, -- hl is only set if avoid_statusline is true
+    avoid_statusline = false, -- set to true to spawn the popup above the statusline
   }
 }
 ```
@@ -89,7 +82,7 @@ These are all the available commands:
 - If the pet is not at the height you desire change the `row` option (higher row means the pet is displayed lower on the screen)
 - If you're seeing a square around the pets, try setting `avoid_statusline` to `true`. If you're still seeing it
     try setting `winblend` to 0 or using a custom highlight group as shown [above](#-Configuration) and in #8.
-- If you don't see the pet at all checkout the [limitations](#-Limitations) and try changing the row value.
+- If you don't see the pet at all checkout the [limitations](#-Limitations), try changing the row value, and make sure you are running kitty.
 
 ## 🐾 Available pets
 
