@@ -6,12 +6,15 @@ As you might know the plugin is heavily inspired by [vscode-pets](https://github
 If you like the art for the pets, check out the [Credits](#-Credits) section.
 
 <!-- panvimdoc-ignore-start -->
+
 ![pets.gif](./pets.gif)
+
 <!-- panvimdoc-ignore-end -->
 
 ## ⚠️ Limitations
 
 This plugin uses the kitty graphics protocol directly. Here are the most significant limitations:
+
 - Only works with [kitty](https://sw.kovidgoyal.net/kitty/) terminal emulator
 - Doesn't currently work inside tmux
 
@@ -22,20 +25,25 @@ Install with your favorite package manager!
 Examples:
 
 With packer:
+
 ```lua
 use({
   "5ayam5/pets.nvim",
   requires = { "MunifTanjim/nui.nvim" }
 })
 ```
+
 With lazy:
+
 ```lua
 {
   "5ayam5/pets.nvim",
   dependencies = { "MunifTanjim/nui.nvim" },
 }
 ```
-And then call 
+
+And then call
+
 ```lua
 require("pets").setup({
   -- your options here
@@ -45,6 +53,7 @@ require("pets").setup({
 ## ⚙️ Configuration
 
 This is the default configuration:
+
 ```lua
 {
   row = 1, -- the row (height) to display the pet at (higher row means the pet is lower on the screen), must be 1<=row<=10
@@ -67,7 +76,8 @@ This is the default configuration:
 ## 📑 Usage - commands
 
 These are all the available commands:
-- `PetsNew {name}`: creates a pet with the style and type defined by the configuration, and name {name}
+
+- `PetsNew {name}`: creates a pet with the style and type defined by the configuration, and name \{name}
 - `PetsNewCustom {type} {style} {name}`: creates a new pet with type, style and name specified in the command
 - `PetsList`: prints the names of all the pets that are currently alive
 - `PetsKill {name}`: kills the pet with given name, which will immediately blink out of existence. Forever.
@@ -81,37 +91,40 @@ These are all the available commands:
 
 - If the pet is not at the height you desire change the `row` option (higher row means the pet is displayed lower on the screen)
 - If you're seeing a square around the pets, try setting `avoid_statusline` to `true`. If you're still seeing it
-    try setting `winblend` to 0 or using a custom highlight group as shown [above](#-Configuration) and in #8.
+  try setting `winblend` to 0 or using a custom highlight group as shown [above](#-Configuration) and in #8.
 - If you don't see the pet at all checkout the [limitations](#-Limitations), try changing the row value, and make sure you are running kitty.
 
 ## 🐾 Available pets
 
-| Pet | Styles |
-|:---:|:-------:|
-|dog|brown, black, gray, beige|
-|slime|green, pink, orange, blue|
-|clippy|black, brown, green, yellow|
-|cockatiel|gray|
-|crab|red|
-|mod|purple|
-|rocky|gray|
-|rubber duck|yellow|
-|snake|green|
-|zappy|yellow|
+|     Pet     |           Styles            |
+| :---------: | :-------------------------: |
+|     dog     |  brown, black, gray, beige  |
+|    slime    |  green, pink, orange, blue  |
+|   clippy    | black, brown, green, yellow |
+|  cockatiel  |            gray             |
+|    crab     |             red             |
+|     mod     |           purple            |
+|    rocky    |            gray             |
+| rubber duck |           yellow            |
+|    snake    |            green            |
+|    zappy    |           yellow            |
 
 <!-- panvimdoc-ignore-start -->
+
 ![bar.png](./bar.png)
+
 <!-- panvimdoc-ignore-end -->
 
 ## 👏 Credits
 
 - The dog assets were created by [NVPH Studio](https://nvph-studio.itch.io/dog-animation-4-different-dogs). All the details about the license
-can be found [here](https://creativecommons.org/licenses/by-nd/4.0/#).
-- The slime was created by me (for now it follows the MIT license):) 
+  can be found [here](https://creativecommons.org/licenses/by-nd/4.0/#).
+- The slime was created by me (for now it follows the MIT license):)
 - The Clippy, Rocky, Zappy, rubber duck, snake, cockatiel, Ferris the crab, and Mod the dotnet bot assets were created by [Marc Duiker](https://twitter.com/marcduiker) for [vscode-pets](https://github.com/tonybaloney/vscode-pets) ([license](https://github.com/tonybaloney/vscode-pets/blob/master/LICENSE)).
 - The old cat assets were designed by [SeethingSwarm](https://seethingswarm.itch.io/catset).
 
 <!-- panvimdoc-ignore-start -->
+
 ## 🙏 Acknowledgements
 
 A big thanks to everyone that helped, helps or will help the project!

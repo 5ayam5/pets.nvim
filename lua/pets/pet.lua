@@ -79,6 +79,9 @@ function M.Pet:set_idle(idle)
 end
 
 function M.Pet:refresh_popup()
+    local kitty = require("pets.kitty")
+    kitty.clear(self.popup.winid)
+    self.animation.current_image = nil
     self.popup:unmount()
     self.popup = require("nui.popup")(self.popup_opts)
     self.popup:mount()

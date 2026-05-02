@@ -30,7 +30,7 @@ function M.setup(options)
         size = { width = M.options.popup.width, height = 10 },
         focusable = false,
         enter = false,
-        win_options = { winblend = 100 },
+        win_options = { winblend = M.options.popup.winblend },
         avoid_statusline = M.options.popup.avoid_statusline,
     }
     M.options.popup = popup_opts
