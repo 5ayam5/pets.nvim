@@ -111,6 +111,65 @@ function M.Animation:restart_if_popup_closed()
     return true
 end
 
+local function rects_overlap(a, b)
+    return a.row < b.row + b.height and b.row < a.row + a.height and a.col < b.col + b.width and b.col < a.col + a.width
+end
+
+function M.Animation:pet_is_covered(row_offset)
+    local winid = self.popup and self.popup.winid
+    if not winid or not vim.api.nvim_win_is_valid(winid) then
+        return false
+    end
+
+    local ok, popup_pos = pcall(vim.api.nvim_win_get_position, winid)
+    if not ok then
+        return false
+    end
+
+    local height = self.scale or 4
+    local pet_rect = {
+        row = vim.o.lines - (self.avoid_statusline and 2 or 1) - height + 1 - (row_offset or 0),
+        col = popup_pos[2] + self.col,
+        width = self.max_frame_width,
+        height = height,
+    }
+
+    local popup_zindex = vim.api.nvim_win_get_config(winid).zindex or 50
+    local border_winid = self.popup.border and self.popup.border.winid
+    for _, other_winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if other_winid ~= winid and other_winid ~= border_winid and vim.api.nvim_win_is_valid(other_winid) then
+            local other_ok, other_config = pcall(vim.api.nvim_win_get_config, other_winid)
+            if
+                other_ok
+                and other_config.relative
+                and other_config.relative ~= ""
+                and not other_config.hide
+                and not other_config.external
+                and (other_config.zindex or 50) > popup_zindex
+            then
+                local pos = vim.api.nvim_win_get_position(other_winid)
+                if
+                    rects_overlap(pet_rect, {
+                        row = pos[1],
+                        col = pos[2],
+                        width = vim.api.nvim_win_get_width(other_winid),
+                        height = vim.api.nvim_win_get_height(other_winid),
+                    })
+                then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+function M.Animation:hide_current_render()
+    kitty.clear_image(self.kitty_img_id)
+    self.kitty_img_id = nil
+end
+
 function M.Animation:next_frame()
     if not kitty.available then
         utils.warning("pets.nvim: kitty terminal not detected")
@@ -124,7 +183,6 @@ function M.Animation:next_frame()
     if self:restart_if_popup_closed() then
         return
     end
-
     if not self.current_image then
         self.frame_counter = 1
     end
@@ -153,6 +211,11 @@ function M.Animation:next_frame()
         row_offset = row_offset + math.floor((self.frame_counter - 1) / total * jump_h)
     elseif self.current_action == "fall" then
         row_offset = row_offset + math.floor((1 - (self.frame_counter - 1) / total) * jump_h)
+    end
+
+    if self:pet_is_covered(row_offset) then
+        self:hide_current_render()
+        return
     end
 
     local img_id = kitty.show(image, self.popup.winid, self.col, row_offset, self.scale, self.avoid_statusline)
