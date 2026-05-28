@@ -47,16 +47,24 @@ function M.Animation.new(sourcedir, type, style, popup, user_opts, state)
 end
 
 function M.Animation:start_timer()
-    if self.timer ~= nil then self:stop_timer() end
+    if self.timer ~= nil then
+        self:stop_timer()
+    end
     self.timer = vim.loop.new_timer()
     self.timer:start(0, 1000 / (self.speed_multiplier * 8), function()
-        vim.schedule(function() M.Animation.next_frame(self) end)
+        vim.schedule(function()
+            M.Animation.next_frame(self)
+        end)
     end)
 end
 
 function M.Animation:stop_timer()
-    if self.timer == nil then return end
-    self.timer:stop(); self.timer:close(); self.timer = nil
+    if self.timer == nil then
+        return
+    end
+    self.timer:stop()
+    self.timer:close()
+    self.timer = nil
 end
 
 function M.Animation:start()
@@ -70,7 +78,9 @@ function M.Animation:start()
     if not self.state.paused and not self.state.hidden then
         M.Animation.start_timer(self)
     elseif self.state.paused and not self.state.hidden then
-        vim.schedule(function() M.Animation.next_frame(self) end)
+        vim.schedule(function()
+            M.Animation.next_frame(self)
+        end)
     end
 end
 
@@ -86,16 +96,23 @@ function M.Animation:next_frame()
         self:stop_timer()
         return
     end
-    if not vim.api.nvim_buf_is_valid(self.popup.bufnr) then return end
+    if not vim.api.nvim_buf_is_valid(self.popup.bufnr) then
+        return
+    end
 
-    if not self.current_image then self.frame_counter = 1 end
+    if not self.current_image then
+        self.frame_counter = 1
+    end
     if self.frame_counter > #self.frames[self.current_action] then
         self.repetitions = self.repetitions + 1
         if #self.frames[self.current_action] > 2 or self.repetitions * #self.frames[self.current_action] >= 8 then
             M.Animation.set_next_action(self)
             self.repetitions = 0
         end
-        if self.dead then self:stop(); return end
+        if self.dead then
+            self:stop()
+            return
+        end
         self.frame_counter = 1
     end
 
@@ -104,7 +121,7 @@ function M.Animation:next_frame()
     self.col = math.min(self.col, max_col)
     M.Animation.set_next_col(self)
 
-    local row_offset = self.row - 1  -- row=1 means bottom, higher = further up
+    local row_offset = self.row - 1 -- row=1 means bottom, higher = further up
     local total = #self.frames[self.current_action]
     local jump_h = math.max(1, math.floor(self.scale / 2))
     if self.current_action == "jump" then
@@ -134,7 +151,8 @@ function M.Animation:set_next_action()
         end
     else
         if math.random() < 0.5 then
-            self.current_action = self.next_actions[self.current_action][math.random(#self.next_actions[self.current_action])]
+            self.current_action =
+                self.next_actions[self.current_action][math.random(#self.next_actions[self.current_action])]
         else
             self.current_action = self.next_actions[self.current_action][1]
         end
@@ -151,8 +169,12 @@ function M.Animation:set_next_col()
     elseif vim.tbl_contains(self.movements.right.slow, self.current_action) then
         if self.col < right_limit then
             local step = #self.frames[self.current_action] <= 2 and self.repetitions or self.frame_counter
-            if step % 2 == 0 then self.col = self.col + 1 end
-        else self.col = M.base_col end
+            if step % 2 == 0 then
+                self.col = self.col + 1
+            end
+        else
+            self.col = M.base_col
+        end
     elseif vim.tbl_contains(self.movements.left.normal, self.current_action) then
         self.col = self.col > M.base_col and self.col - 1 or right_limit
     elseif vim.tbl_contains(self.movements.left.fast, self.current_action) then
@@ -160,13 +182,19 @@ function M.Animation:set_next_col()
     elseif vim.tbl_contains(self.movements.left.slow, self.current_action) then
         if self.col > M.base_col then
             local step = #self.frames[self.current_action] < 2 and self.repetitions or self.frame_counter
-            if step % 2 == 0 then self.col = self.col - 1 end
-        else self.col = right_limit end
+            if step % 2 == 0 then
+                self.col = self.col - 1
+            end
+        else
+            self.col = right_limit
+        end
     end
 end
 
 function M.Animation:set_state(new_state)
-    for key, value in pairs(new_state) do self.state[key] = value end
+    for key, value in pairs(new_state) do
+        self.state[key] = value
+    end
     if new_state.hidden ~= nil then
         if self.state.hidden then
             self:stop_timer()

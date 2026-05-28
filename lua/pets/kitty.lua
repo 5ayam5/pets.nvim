@@ -87,14 +87,18 @@ end
 
 local cell_size = nil
 local function get_cell_size()
-    if cell_size then return cell_size end
+    if cell_size then
+        return cell_size
+    end
     local ok, ffi = pcall(require, "ffi")
     if ok then
         pcall(function()
             ffi.cdef([[typedef struct { unsigned short row,col,xpixel,ypixel; } winsize; int ioctl(int,int,...);]])
             local TIOCGWINSZ = jit.os == "OSX" and 0x40087468 or 0x5413
             local sz = ffi.new("winsize")
+            ---@diagnostic disable-next-line
             if ffi.C.ioctl(1, TIOCGWINSZ, sz) == 0 and sz.col > 0 then
+                ---@diagnostic disable-next-line
                 cell_size = { w = sz.xpixel / sz.col, h = sz.ypixel / sz.row }
             end
         end)
@@ -104,12 +108,19 @@ local function get_cell_size()
 end
 
 function M.show(path, win, col, row_offset, scale, avoid_statusline)
-    if not path then return end
+    if not path then
+        return
+    end
     local h = scale or 4
-    local img_id = next_img_id; next_img_id = next_img_id + 1
-    if not upload(path, img_id) then return end
+    local img_id = next_img_id
+    next_img_id = next_img_id + 1
+    if not upload(path, img_id) then
+        return
+    end
     local s = win_state[win]
-    if s then apc({ a = "d", d = "i", i = s.img_id, q = 2 }) end
+    if s then
+        apc({ a = "d", d = "i", i = s.img_id, q = 2 })
+    end
     win_state[win] = { img_id = img_id }
     local pos = vim.api.nvim_win_get_position(win)
     local bottom = vim.o.lines - (avoid_statusline and 2 or 1)
