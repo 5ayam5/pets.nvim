@@ -14,7 +14,14 @@ M.options = {
     default_style = "brown",
     random = true,
     death_animation = true,
-    popup = { width = "30%", winblend = 100, hl = { Normal = "Normal" }, avoid_statusline = false },
+    popup = {
+        width = "30%",
+        winblend = 100,
+        hl = { Normal = "Normal" },
+        avoid_statusline = false,
+        row = "100%",
+        col = "100%",
+    },
 }
 
 M.pets = {}
@@ -25,7 +32,7 @@ function M.setup(options)
 
     -- popup opts
     local popup_opts = {
-        position = { row = "100%", col = "100%" },
+        position = { row = M.options.popup.row, col = M.options.popup.col },
         relative = "editor",
         size = { width = M.options.popup.width, height = 10 },
         focusable = false,
