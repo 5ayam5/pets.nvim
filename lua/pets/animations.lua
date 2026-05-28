@@ -86,8 +86,29 @@ end
 
 function M.Animation:stop()
     kitty.clear(self.popup.winid)
+    kitty.clear_image(self.kitty_img_id)
+    self.kitty_img_id = nil
     self.current_image = nil
     self:stop_timer()
+end
+
+function M.Animation:restart_if_popup_closed()
+    if not self.current_image then
+        return false
+    end
+
+    local winid = self.popup and self.popup.winid
+    if winid and vim.api.nvim_win_is_valid(winid) then
+        return false
+    end
+
+    kitty.clear_image(self.kitty_img_id)
+    self.kitty_img_id = nil
+    self.current_image = nil
+    pcall(function()
+        self.popup:show()
+    end)
+    return true
 end
 
 function M.Animation:next_frame()
@@ -97,6 +118,10 @@ function M.Animation:next_frame()
         return
     end
     if not vim.api.nvim_buf_is_valid(self.popup.bufnr) then
+        self:restart_if_popup_closed()
+        return
+    end
+    if self:restart_if_popup_closed() then
         return
     end
 
@@ -130,7 +155,12 @@ function M.Animation:next_frame()
         row_offset = row_offset + math.floor((1 - (self.frame_counter - 1) / total) * jump_h)
     end
 
-    kitty.show(image, self.popup.winid, self.col, row_offset, self.scale, self.avoid_statusline)
+    local img_id = kitty.show(image, self.popup.winid, self.col, row_offset, self.scale, self.avoid_statusline)
+    if not img_id then
+        self:restart_if_popup_closed()
+        return
+    end
+    self.kitty_img_id = img_id
     self.current_image = image
     self.frame_counter = self.frame_counter + 1
 end

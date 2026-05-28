@@ -108,21 +108,25 @@ local function get_cell_size()
 end
 
 function M.show(path, win, col, row_offset, scale, avoid_statusline)
-    if not path then
-        return
+    if not path or not win or not vim.api.nvim_win_is_valid(win) then
+        return nil
     end
+    local ok, pos = pcall(vim.api.nvim_win_get_position, win)
+    if not ok then
+        return nil
+    end
+
     local h = scale or 4
     local img_id = next_img_id
     next_img_id = next_img_id + 1
     if not upload(path, img_id) then
-        return
+        return nil
     end
     local s = win_state[win]
     if s then
-        apc({ a = "d", d = "i", i = s.img_id, q = 2 })
+        M.clear_image(s.img_id)
     end
     win_state[win] = { img_id = img_id }
-    local pos = vim.api.nvim_win_get_position(win)
     local bottom = vim.o.lines - (avoid_statusline and 2 or 1)
     local row = bottom - h + 1 - (row_offset or 0)
     -- compute cell width from PNG aspect ratio and terminal cell pixel size
@@ -130,12 +134,20 @@ function M.show(path, win, col, row_offset, scale, avoid_statusline)
     local cs = get_cell_size()
     local w = pw and math.max(1, math.ceil(h * (pw / ph) * (cs.h / cs.w))) or h * 2
     display(img_id, row, pos[2] + col, h, w)
+    return img_id
+end
+
+function M.clear_image(img_id)
+    if not img_id then
+        return
+    end
+    apc({ a = "d", d = "i", i = img_id, q = 2 })
 end
 
 function M.clear(win)
     local s = win_state[win]
     if s then
-        apc({ a = "d", d = "i", i = s.img_id, q = 2 })
+        M.clear_image(s.img_id)
         win_state[win] = nil
     end
 end
