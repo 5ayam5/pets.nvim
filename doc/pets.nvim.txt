@@ -1,5 +1,5 @@
 *pets.nvim.txt*
-                                   For NVIM v0.8.0    Last change: 2026 May 02
+                               For NVIM v0.8.0    Last change: 2026 October 12
 
 ==============================================================================
 Table of Contents                                *pets.nvim-table-of-contents*
@@ -21,7 +21,7 @@ little animal friends inside your editor. It uses the kitty graphics protocol
 <https://sw.kovidgoyal.net/kitty/graphics-protocol/> directly to display images
 in a terminal window. As you might know the plugin is heavily inspired by
 vscode-pets <https://github.com/tonybaloney/vscode-pets/tree/master/media>. If
-you like the art for the pets, check out the |pets.nvim-credits| section.
+you like the art for the pets, check out the Credits section.
 
 
 ⚠️ LIMITATIONS                    *pets.nvim-pets.nvim-⚠️-limitations*
@@ -103,7 +103,7 @@ These are all the available commands:
 - If the pet is not at the height you desire change the `row` option (higher row means the pet is displayed higher on the screen)
 - If the pets overlap your statusline, set `popup.avoid_statusline` to `true`.
 - Pets are hidden while a floating window (e.g. lazygit) covers them and reappear once it is closed.
-- If you don’t see the pet at all checkout the |pets.nvim-limitations|, try changing the row value, and make sure you are running kitty.
+- If you don’t see the pet at all checkout the limitations, try changing the row value, and make sure you are running kitty.
 
 
 🐾 AVAILABLE PETS                  *pets.nvim-pets.nvim-🐾-available-pets*
