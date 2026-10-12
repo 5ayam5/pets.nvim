@@ -15,20 +15,12 @@ function M.Pet.new(name, type, style, user_opts, state)
     instance.style = style
     instance.death_animation = user_opts.death_animation
     instance.state = state
-    instance.popup_opts = user_opts.popup
 
     local wd = debug.getinfo(1).source:sub(2):match("(.*nvim/)") .. "media/"
     instance.sourcedir = wd .. type .. "/" .. style .. "/"
 
-    instance.popup = require("nui.popup")(user_opts.popup)
-    instance.animation = require("pets.animations").Animation.new(
-        instance.sourcedir,
-        type,
-        style,
-        instance.popup,
-        user_opts,
-        instance.state
-    )
+    instance.animation =
+        require("pets.animations").Animation.new(instance.sourcedir, type, style, user_opts, instance.state)
     return instance
 end
 
@@ -38,27 +30,20 @@ function M.Pet:animate()
         vim.notify("Row must be >= 1 and <= 10. Check your config", vim.log.levels.ERROR)
         return
     end
-    self.popup:mount()
     self.animation:start()
 end
 
 -- delete the pet :(
 function M.Pet:kill()
-    if self.animation.state.paused then
+    if self.animation.state.paused or not self.death_animation or self.animation.frames["die"] == nil then
         self.animation:stop()
-        self.popup:unmount()
+        return
     end
-    if self.death_animation and self.animation.frames["die"] ~= nil then
-        self.animation.dying = true
-    else
-        self.animation:stop()
-        self.popup:unmount()
-    end
+    self.animation.dying = true
 end
 
 function M.Pet:remove()
     self.animation:stop()
-    self.popup:unmount()
 end
 
 function M.Pet:set_paused(paused)
@@ -78,14 +63,8 @@ function M.Pet:set_idle(idle)
     self.animation:set_state({ idle = idle })
 end
 
-function M.Pet:refresh_popup()
-    local kitty = require("pets.kitty")
-    kitty.clear(self.popup.winid)
-    self.animation.current_image = nil
-    self.popup:unmount()
-    self.popup = require("nui.popup")(self.popup_opts)
-    self.popup:mount()
-    self.animation.popup = self.popup
+function M.Pet:refresh()
+    self.animation:refresh()
 end
 
 return M

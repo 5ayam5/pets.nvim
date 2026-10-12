@@ -6,7 +6,7 @@ if not (os.getenv("KITTY_WINDOW_ID") or (os.getenv("TERM") or ""):find("kitty"))
 end
 M.available = true
 
-local win_state = {} -- win -> { img_id }
+local win_state = {} -- key -> { img_id }
 local next_img_id = 1
 
 local function write(data)
@@ -107,12 +107,10 @@ local function get_cell_size()
     return cell_size
 end
 
-function M.show(path, win, col, row_offset, scale, avoid_statusline)
-    if not path or not win or not vim.api.nvim_win_is_valid(win) then
-        return nil
-    end
-    local ok, pos = pcall(vim.api.nvim_win_get_position, win)
-    if not ok then
+-- @param key identifies the owner of the image so the previous frame can be replaced
+-- @param col absolute editor column to draw the image at
+function M.show(path, key, col, row_offset, scale, avoid_statusline)
+    if not path then
         return nil
     end
 
@@ -122,18 +120,18 @@ function M.show(path, win, col, row_offset, scale, avoid_statusline)
     if not upload(path, img_id) then
         return nil
     end
-    local s = win_state[win]
+    local s = win_state[key]
     if s then
         M.clear_image(s.img_id)
     end
-    win_state[win] = { img_id = img_id }
+    win_state[key] = { img_id = img_id }
     local bottom = vim.o.lines - (avoid_statusline and 2 or 1)
     local row = bottom - h + 1 - (row_offset or 0)
     -- compute cell width from PNG aspect ratio and terminal cell pixel size
     local pw, ph = png_dims(path)
     local cs = get_cell_size()
     local w = pw and math.max(1, math.ceil(h * (pw / ph) * (cs.h / cs.w))) or h * 2
-    display(img_id, row, pos[2] + col, h, w)
+    display(img_id, row, col, h, w)
     return img_id
 end
 
@@ -144,17 +142,17 @@ function M.clear_image(img_id)
     apc({ a = "d", d = "i", i = img_id, q = 2 })
 end
 
-function M.clear(win)
-    local s = win_state[win]
+function M.clear(key)
+    local s = win_state[key]
     if s then
         M.clear_image(s.img_id)
-        win_state[win] = nil
+        win_state[key] = nil
     end
 end
 
 function M.clear_all()
-    for win in pairs(win_state) do
-        M.clear(win)
+    for key in pairs(win_state) do
+        M.clear(key)
     end
 end
 

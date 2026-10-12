@@ -2,7 +2,7 @@ local M = {}
 local utils = require("pets.utils")
 
 M.paused = false
-M.paused = false
+M.hidden = false
 M.idle = false
 
 M.options = {
@@ -16,11 +16,8 @@ M.options = {
     death_animation = true,
     popup = {
         width = "30%",
-        winblend = 100,
-        hl = { Normal = "Normal" },
-        avoid_statusline = false,
-        row = "100%",
         col = "100%",
+        avoid_statusline = false,
     },
 }
 
@@ -29,18 +26,6 @@ M.pets = {}
 function M.setup(options)
     options = options or {}
     M.options = vim.tbl_deep_extend("force", M.options, options)
-
-    -- popup opts
-    local popup_opts = {
-        position = { row = M.options.popup.row, col = M.options.popup.col },
-        relative = "editor",
-        size = { width = M.options.popup.width, height = 10 },
-        focusable = false,
-        enter = false,
-        win_options = { winblend = M.options.popup.winblend },
-        avoid_statusline = M.options.popup.avoid_statusline,
-    }
-    M.options.popup = popup_opts
 
     require("pets.commands") -- init autocommands
 end
@@ -53,7 +38,7 @@ function M.create_pet(name, type, style)
     end
     local state = {
         paused = M.paused,
-        hidden = M.paused,
+        hidden = M.hidden,
         idle = M.idle,
     }
     local pet = require("pets.pet").Pet.new(name, type, style, M.options, state)
@@ -132,7 +117,7 @@ end
 
 function M.refresh()
     for _, pet in pairs(M.pets) do
-        pet:refresh_popup()
+        pet:refresh()
     end
 end
 

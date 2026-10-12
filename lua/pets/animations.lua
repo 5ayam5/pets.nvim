@@ -6,14 +6,22 @@ local utils = require("pets.utils")
 local listdir = utils.listdir
 local kitty = require("pets.kitty")
 
-function M.Animation.new(sourcedir, type, style, popup, user_opts, state)
+-- resolve a number or a percentage string ("30%") against total
+local function resolve(value, total)
+    if type(value) == "string" and value:sub(-1) == "%" then
+        return math.floor(total * (tonumber(value:sub(1, -2)) or 0) / 100)
+    end
+    return tonumber(value) or 0
+end
+
+function M.Animation.new(sourcedir, type, style, user_opts, state)
     local instance = setmetatable({}, M.Animation)
     instance.type = type
     instance.style = style
     instance.frame_counter = 1
     instance.actions = listdir(sourcedir)
     instance.frames = {}
-    instance.popup = popup
+    instance.area_opts = user_opts.popup
     instance.state = state
     instance.speed_multiplier = user_opts.speed_multiplier
     instance.scale = user_opts.scale
@@ -31,10 +39,10 @@ function M.Animation.new(sourcedir, type, style, popup, user_opts, state)
         sourcedir .. instance.actions[1] .. "/" .. listdir(sourcedir .. instance.actions[1])[1],
         instance.scale
     ).width
-    local max_col = math.max(0, popup.win_config.width - frame_width)
-    M.base_col = math.min(user_opts.col, max_col)
-    instance.row, instance.col = user_opts.row, math.random(M.base_col, max_col)
     instance.max_frame_width = frame_width
+    local max_col = math.max(0, instance:area().width - frame_width)
+    instance.base_col = math.min(user_opts.col, max_col)
+    instance.row, instance.col = user_opts.row, math.random(instance.base_col, max_col)
 
     local pet = vim.tbl_deep_extend("keep", require("pets.pets." .. type), utils.default_pet_table)
     instance.next_actions = pet.next_actions
@@ -44,6 +52,14 @@ function M.Animation.new(sourcedir, type, style, popup, user_opts, state)
     instance.get_death_animation = pet.get_death_animation
 
     return instance
+end
+
+-- the editor columns the pet can walk in, recomputed so it follows resizes
+function M.Animation:area()
+    local columns = vim.o.columns
+    local width = math.max(0, math.min(columns, resolve(self.area_opts.width, columns)))
+    local col = math.max(0, math.min(columns - width, resolve(self.area_opts.col, columns - width)))
+    return { col = col, width = width }
 end
 
 function M.Animation:start_timer()
@@ -85,59 +101,29 @@ function M.Animation:start()
 end
 
 function M.Animation:stop()
-    kitty.clear(self.popup.winid)
+    kitty.clear(self)
     kitty.clear_image(self.kitty_img_id)
     self.kitty_img_id = nil
     self.current_image = nil
     self:stop_timer()
 end
 
-function M.Animation:restart_if_popup_closed()
-    if not self.current_image then
-        return false
-    end
-
-    local winid = self.popup and self.popup.winid
-    if winid and vim.api.nvim_win_is_valid(winid) then
-        return false
-    end
-
-    kitty.clear_image(self.kitty_img_id)
-    self.kitty_img_id = nil
-    self.current_image = nil
-    pcall(function()
-        self.popup:show()
-    end)
-    return true
-end
-
 local function rects_overlap(a, b)
     return a.row < b.row + b.height and b.row < a.row + a.height and a.col < b.col + b.width and b.col < a.col + a.width
 end
 
-function M.Animation:pet_is_covered(row_offset)
-    local winid = self.popup and self.popup.winid
-    if not winid or not vim.api.nvim_win_is_valid(winid) then
-        return false
-    end
-
-    local ok, popup_pos = pcall(vim.api.nvim_win_get_position, winid)
-    if not ok then
-        return false
-    end
-
+-- check if any visible floating window in the current tab overlaps the pet
+function M.Animation:pet_is_covered(col, row_offset)
     local height = self.scale or 4
     local pet_rect = {
         row = vim.o.lines - (self.avoid_statusline and 2 or 1) - height + 1 - (row_offset or 0),
-        col = popup_pos[2] + self.col,
+        col = col,
         width = self.max_frame_width,
         height = height,
     }
 
-    local popup_zindex = vim.api.nvim_win_get_config(winid).zindex or 50
-    local border_winid = self.popup.border and self.popup.border.winid
     for _, other_winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if other_winid ~= winid and other_winid ~= border_winid and vim.api.nvim_win_is_valid(other_winid) then
+        if vim.api.nvim_win_is_valid(other_winid) then
             local other_ok, other_config = pcall(vim.api.nvim_win_get_config, other_winid)
             if
                 other_ok
@@ -145,7 +131,6 @@ function M.Animation:pet_is_covered(row_offset)
                 and other_config.relative ~= ""
                 and not other_config.hide
                 and not other_config.external
-                and (other_config.zindex or 50) > popup_zindex
             then
                 local pos = vim.api.nvim_win_get_position(other_winid)
                 if
@@ -176,11 +161,7 @@ function M.Animation:next_frame()
         self:stop_timer()
         return
     end
-    if not vim.api.nvim_buf_is_valid(self.popup.bufnr) then
-        self:restart_if_popup_closed()
-        return
-    end
-    if self:restart_if_popup_closed() then
+    if self.state.hidden or self.dead then
         return
     end
     if not self.current_image then
@@ -200,9 +181,10 @@ function M.Animation:next_frame()
     end
 
     local image = self.frames[self.current_action][self.frame_counter]
-    local max_col = math.max(M.base_col, self.popup.win_config.width - self.max_frame_width)
+    local area = self:area()
+    local max_col = math.max(self.base_col, area.width - self.max_frame_width)
     self.col = math.min(self.col, max_col)
-    M.Animation.set_next_col(self)
+    M.Animation.set_next_col(self, area.width)
 
     local row_offset = self.row - 1 -- row=1 means bottom, higher = further up
     local total = #self.frames[self.current_action]
@@ -213,14 +195,14 @@ function M.Animation:next_frame()
         row_offset = row_offset + math.floor((1 - (self.frame_counter - 1) / total) * jump_h)
     end
 
-    if self:pet_is_covered(row_offset) then
+    local col = area.col + self.col
+    if self:pet_is_covered(col, row_offset) then
         self:hide_current_render()
         return
     end
 
-    local img_id = kitty.show(image, self.popup.winid, self.col, row_offset, self.scale, self.avoid_statusline)
+    local img_id = kitty.show(image, self, col, row_offset, self.scale, self.avoid_statusline)
     if not img_id then
-        self:restart_if_popup_closed()
         return
     end
     self.kitty_img_id = img_id
@@ -233,7 +215,6 @@ function M.Animation:set_next_action()
         if vim.startswith(self.current_action, "die") or vim.endswith(self.current_action, "die") then
             self.dead = true
             M.Animation.stop(self)
-            self.popup:unmount()
         end
         self.current_action = self.get_death_animation(self.current_action)
         return
@@ -252,13 +233,12 @@ function M.Animation:set_next_action()
     end
 end
 
-function M.Animation:set_next_col()
-    local width = self.popup.win_config.width
-    local right_limit = math.max(M.base_col, width - self.max_frame_width)
+function M.Animation:set_next_col(width)
+    local right_limit = math.max(self.base_col, width - self.max_frame_width)
     if vim.tbl_contains(self.movements.right.normal, self.current_action) then
-        self.col = self.col < right_limit and self.col + 1 or M.base_col
+        self.col = self.col < right_limit and self.col + 1 or self.base_col
     elseif vim.tbl_contains(self.movements.right.fast, self.current_action) then
-        self.col = self.col < right_limit and self.col + 2 or M.base_col
+        self.col = self.col < right_limit and self.col + 2 or self.base_col
     elseif vim.tbl_contains(self.movements.right.slow, self.current_action) then
         if self.col < right_limit then
             local step = #self.frames[self.current_action] <= 2 and self.repetitions or self.frame_counter
@@ -266,14 +246,14 @@ function M.Animation:set_next_col()
                 self.col = self.col + 1
             end
         else
-            self.col = M.base_col
+            self.col = self.base_col
         end
     elseif vim.tbl_contains(self.movements.left.normal, self.current_action) then
-        self.col = self.col > M.base_col and self.col - 1 or right_limit
+        self.col = self.col > self.base_col and self.col - 1 or right_limit
     elseif vim.tbl_contains(self.movements.left.fast, self.current_action) then
-        self.col = self.col > M.base_col and self.col - 2 or right_limit
+        self.col = self.col > self.base_col and self.col - 2 or right_limit
     elseif vim.tbl_contains(self.movements.left.slow, self.current_action) then
-        if self.col > M.base_col then
+        if self.col > self.base_col then
             local step = #self.frames[self.current_action] < 2 and self.repetitions or self.frame_counter
             if step % 2 == 0 then
                 self.col = self.col - 1
@@ -291,21 +271,32 @@ function M.Animation:set_state(new_state)
     if new_state.hidden ~= nil then
         if self.state.hidden then
             self:stop_timer()
-            kitty.clear(self.popup.winid)
+            kitty.clear(self)
+            self.kitty_img_id = nil
             self.current_image = nil
-            self.popup:unmount()
         else
-            self.popup:mount()
             self:start()
         end
     elseif new_state.paused ~= nil then
         if self.state.paused then
             self:stop_timer()
         else
-            kitty.clear(self.popup.winid)
+            kitty.clear(self)
             self.current_image = nil
             self:start()
         end
+    end
+end
+
+-- redraw after the editor size changes
+function M.Animation:refresh()
+    kitty.clear(self)
+    self.kitty_img_id = nil
+    self.current_image = nil
+    if self.state.paused and not self.state.hidden and not self.dead then
+        vim.schedule(function()
+            M.Animation.next_frame(self)
+        end)
     end
 end
 
